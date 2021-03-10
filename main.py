@@ -5,46 +5,57 @@ import requests
 import json
 import subprocess
 import sys
-import  api_key
+
+from requests import session
+
+import api_key
 
 
-authorize_url = api_key.AUTHORIZE
+authorize_url = api_key.secret.get('AUTHORIZE')
+callback_uri = api_key.secret.get('CALL_BACK_URL')
+app_id = api_key.secret.get('APPLICATION_ID')
+app_secret = api_key.secret.get('SECRET')
+auth_code = api_key.secret.get('CODE')
+user_name = api_key.secret.get('USER_NAME')
+password = api_key.secret.get('PASSWORD')
+
+site = "https://www.inaturalist.org"
 token_url = "https://www.inaturalist.org/users/api_token"
+test_api_url = "https://api.inaturalist.org/"
 
-#callback url specified when the application was defined
-callback_uri = api_key.CALL_BACK_URL
 
-test_api_url = "<<the URL of the API you want to call, along with any parameters, goes here>>"
 
-#client (application) credentials - located at apim.byu.edu
-client_id = api_key.APPLICATION_ID
-client_secret = api_key.SECRET
+url = site+'/oauth/authorize?client_id='+app_id+'&redirect_uri='+callback_uri+'&response_type=code'
 
-#step A - simulate a request from a browser on the authorize_url - will return an authorization code after the user is
-# prompted for credentials.
-
-authorization_redirect_url = authorize_url + '?response_type=code&client_id=' + client_id + '&redirect_uri=' + callback_uri + '&scope=openid'
-
+auth_code = session(url)
+print(auth_code)
 
 print("go to the following url on the browser and enter the code from the returned url: ")
-print("---  " + authorization_redirect_url + "  ---")
-authorization_code = raw_input('code: ')
+#print("---  " + authorization_redirect_url + "  ---")
 
-# step I, J - turn the authorization code into a access token, etc
-data = {'grant_type': 'authorization_code', 'code': authorization_code, 'redirect_uri': callback_uri}
+data = {'grant_type': 'authorization_code', 'redirect_uri': callback_uri}
 print("requesting access token")
-access_token_response = requests.post(token_url, data=data, verify=False, allow_redirects=False, auth=(client_id, client_secret))
-
+# token_url, data=data, verify=False, allow_redirects=False, auth=(client_id, client_secret)
+# secets payload
+payload = {
+    'client_id': app_id,
+    'client_secret': app_secret,
+    'code': auth_code,
+    'redirect_uri': callback_uri,
+    'grant_type': "authorization_code"
+}
+access_token_response = requests.post(site+'/oauth/token', data=payload)
+#access_token_response = requests.post(url)
 print("response")
 print(access_token_response.headers)
-print('body: ' + access_token_response.text)
 
 # we can now use the access_token as much as we want to access protected resources.
 tokens = json.loads(access_token_response.text)
+print("tokens", tokens)
 access_token = tokens['access_token']
-print("access token: " + access_token)
+# print("access token: " + access_token)
 
 api_call_headers = {'Authorization': 'Bearer ' + access_token}
-api_call_response = requests.get(test_api_url, headers=api_call_headers, verify=False)
+api_call_response = requests.get(test_api_url, responce_type=api_key.secret.get('CODE'), headers=api_call_headers, verify=False)
 
 print(api_call_response.text)
