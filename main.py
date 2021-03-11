@@ -23,39 +23,23 @@ site = "https://www.inaturalist.org"
 token_url = "https://www.inaturalist.org/users/api_token"
 test_api_url = "https://api.inaturalist.org/"
 
+# todo check to see token is null or old revoke ==>> use OR revoke.
 
-
+# todo authorize redirect obtain auth_code get the ETag out to use as auth_code
 url = site+'/oauth/authorize?client_id='+app_id+'&redirect_uri='+callback_uri+'&response_type=code'
-
-auth_code = session(url)
-print(auth_code)
-
-print("go to the following url on the browser and enter the code from the returned url: ")
-#print("---  " + authorization_redirect_url + "  ---")
+auth_response = requests.get(url)
 
 data = {'grant_type': 'authorization_code', 'redirect_uri': callback_uri}
-print("requesting access token")
-# token_url, data=data, verify=False, allow_redirects=False, auth=(client_id, client_secret)
-# secets payload
+
+# todo add auth_code to gain token
 payload = {
-    'client_id': app_id,
-    'client_secret': app_secret,
-    'code': auth_code,
-    'redirect_uri': callback_uri,
-    'grant_type': "authorization_code"
+    'grant_type': "client_credentials"
 }
-access_token_response = requests.post(site+'/oauth/token', data=payload)
-#access_token_response = requests.post(url)
-print("response")
-print(access_token_response.headers)
+# return token
+access_token_response = requests.post(site+'/oauth/token', data=payload, verify=False, allow_redirects=False, auth=(app_id, app_secret))
 
 # we can now use the access_token as much as we want to access protected resources.
 tokens = json.loads(access_token_response.text)
 print("tokens", tokens)
 access_token = tokens['access_token']
-# print("access token: " + access_token)
-
-api_call_headers = {'Authorization': 'Bearer ' + access_token}
-api_call_response = requests.get(test_api_url, responce_type=api_key.secret.get('CODE'), headers=api_call_headers, verify=False)
-
-print(api_call_response.text)
+print(access_token_response.text)
